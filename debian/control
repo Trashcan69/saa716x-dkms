@@ -4,6 +4,7 @@ Priority: optional
 Maintainer: Marcel Jueling <Marcel.Jueling@gmx.de>
 Build-Depends: debhelper (>= 11)
 Standards-Version: 4.1.3
+Git: https://github.com/Trashcan69/saa716x-dkms.git
 Homepage: https://www.jueling.de/vdr
 
 Package: saa716x-dkms
