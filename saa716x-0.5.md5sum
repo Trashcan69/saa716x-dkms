@@ -1,3 +1,3 @@
-4784801c18aa3ec3446396469b2d2e20  saa716x-0.5/dkms.conf
-fd0a75d1d00f4bbaf521be815f5967a2  saa716x-0.5/make.sh
-990e7483b3d338c0c3fc775f5f429a6c  saa716x-0.5/saa716x.diff
+4784801c18aa3ec3446396469b2d2e20  /usr/src/saa716x-0.5/dkms.conf
+fd0a75d1d00f4bbaf521be815f5967a2  /usr/src/saa716x-0.5/make.sh
+990e7483b3d338c0c3fc775f5f429a6c  /usr/src/saa716x-0.5/saa716x.diff
