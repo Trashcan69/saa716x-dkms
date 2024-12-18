@@ -1,0 +1,80 @@
+diff -u saa716x/Makefile saa716x.patch/Makefile
+--- saa716x/Makefile	2022-08-01 10:38:49.000000000 +0200
++++ saa716x.patch/Makefile	2022-09-29 22:12:20.329792899 +0200
+@@ -13,10 +13,27 @@
+ 			   saa716x_ff_ir.o	\
+ 			   saa716x_ff_phi.o
+ 
+-obj-$(CONFIG_SAA716X_CORE)	  += saa716x_core.o
+-obj-$(CONFIG_DVB_SAA716X_BUDGET)  += saa716x_budget.o
+-obj-$(CONFIG_DVB_SAA716X_HYBRID)  += saa716x_hybrid.o
+-obj-$(CONFIG_DVB_SAA716X_FF)	  += saa716x_ff.o
++#obj-$(CONFIG_SAA716X_CORE)	  += saa716x_core.o
++#obj-$(CONFIG_DVB_SAA716X_BUDGET)  += saa716x_budget.o
++#obj-$(CONFIG_DVB_SAA716X_HYBRID)  += saa716x_hybrid.o
++#obj-$(CONFIG_DVB_SAA716X_FF)	  += saa716x_ff.o
++
++obj-m  := saa716x_core.o
++obj-m  += saa716x_budget.o
++obj-m  += saa716x_hybrid.o
++obj-m  += saa716x_ff.o
+ 
+ ccflags-y += -Idrivers/media/dvb-frontends/
+ ccflags-y += -Idrivers/media/tuners
++
++KDIR	:= /lib/modules/$(shell uname -r)/build
++PWD	:= $(shell pwd)
++
++EXTRA_CFLAGS = -Idrivers/media/dvb/dvb-core/ -Idrivers/media/dvb/frontends/ -Idrivers/media/dvb-core/ -Idrivers/media/dvb-frontends/ -Idrivers/media/tuners
++
++default:
++	$(MAKE) -C $(KDIR) -I/usr/include/linux M=$(PWD) modules
++
++clean:
++	rm -f *.o *.ko
++
+diff -u saa716x/saa716x_ff.h saa716x.patch/saa716x_ff.h
+--- saa716x/saa716x_ff.h	2022-08-01 10:38:49.000000000 +0200
++++ saa716x.patch/saa716x_ff.h	2022-09-29 22:12:20.329792899 +0200
+@@ -113,6 +113,29 @@
+ #define VIDEO_CAPTURE_OFF	0
+ #define VIDEO_CAPTURE_ONE_SHOT	1
+ 
++#if !defined OSD_RAW_CMD
++typedef struct osd_raw_cmd_s {
++       const void __user *cmd_data;
++       int cmd_len;
++       void __user *result_data;
++       int result_len;
++} osd_raw_cmd_t;
++
++typedef struct osd_raw_data_s {
++       const void __user *data_buffer;
++       int data_length;
++       int data_handle;
++} osd_raw_data_t;
++
++#define OSD_RAW_CMD            _IOWR('o', 162, osd_raw_cmd_t)
++#define OSD_RAW_DATA           _IOWR('o', 163, osd_raw_data_t)
++#endif
++
++#define VIDEO_CAPTURE_OFF	0
++#define VIDEO_CAPTURE_ONE_SHOT	1
++#ifndef AUDIO_GET_PTS
++#define AUDIO_GET_PTS              _IOR('o', 19, __u64)
++#endif
+ 
+ /* place to store all the necessary device information */
+ struct sti7109_dev {
+diff -u saa716x/saa716x_ff_main.c saa716x.patch/saa716x_ff_main.c
+--- saa716x//saa716x_ff_main.c	2016-04-09 19:53:44.163976622 +0200
++++ saa716x.patch/saa716x_ff_main.c	2016-04-09 19:56:05.897688959 +0200
+@@ -1015,7 +1015,7 @@
+ 
+ 	sti7109_cmd_init(sti7109);
+ 
+-	sti7109->video_capture = video_capture;
++	sti7109->video_capture = VIDEO_CAPTURE_ONE_SHOT;
+ 	mutex_init(&sti7109->video_lock);
+ 
+ 	saa716x_gpio_set_output(saa716x, TT_PREMIUM_GPIO_POWER_ENABLE);
