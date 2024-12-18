@@ -1,7 +1,6 @@
 saa716x-dkms (0.5) unstable; urgency=medium
 
   * Added mulithread compiler support
-  * Added saa716x-0.5.md5sum
 
  -- Marcel Jueling <Marcel.Jueling@gmx.de>  Wed, 18 Dec 2024 11:56:29 +0100
 
