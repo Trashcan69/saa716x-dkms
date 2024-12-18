@@ -1,8 +1,6 @@
 #!/bin/sh
 set -e
 
-DKMS_NAME=saa716x
-
 case $1 in
     remove|upgrade)
 	find /lib/modules/*/ -name ${DKMS_NAME}*.ko* -delete >/dev/null 2>&1
