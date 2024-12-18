@@ -8,7 +8,7 @@ postinst_found=0
 
 case "$1" in
     configure)
-	chmod +x /usr/src/saa716x-0.5/make.sh
+	chmod +x /usr/src/${DKMS_NAME}-${DKMS_VERSION}/make.sh
 	for DKMS_POSTINST in /usr/lib/dkms/common.postinst /usr/share/${DKMS_NAME}-dkms/postinst; do
 		if [ -f $DKMS_POSTINST ]; then
 			echo "That takes a while... be patient."
