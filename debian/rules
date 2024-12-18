@@ -6,10 +6,8 @@
 %:
 	dh $@
 
-override_dh_build:
-	error() { echo "CHECKSUM ERROR!!!"; exit 1; }
-	
+override_dh_auto_build:
 	md5sum /usr/src/saa716x-0.5/* >/tmp/saa716x-0.5.md5sum
-	diff -q /tmp/saa716x-0.5.md5sum /usr/share/doc/saa716x-dkms/saa716x-0.5.md5sum || error
+	diff -q /tmp/saa716x-0.5.md5sum /usr/share/doc/saa716x-dkms/saa716x-0.5.md5sum
 	rm -f /tmp/saa716x-0.5.md5sum
-	dh_build $@
+	dh_auto_build $@
