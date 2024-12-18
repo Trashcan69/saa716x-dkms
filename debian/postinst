@@ -1,6 +1,9 @@
 #!/bin/sh
 set -e
 
+DKMS_NAME=saa716x
+DKMS_VERSION=0.5
+
 postinst_found=0
 
 case "$1" in
