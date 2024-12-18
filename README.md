@@ -1,5 +1,7 @@
-This package is for installing the modules for the TechnoTrend Premium
-DVB S2-6400 by dkms (Dynamic Kernel Module Support).
+### TechnoTrend Premium DVB S2-6400 kernel modules
+
+This package is for building andinstalling the modules for the
+TechnoTrend Premium DVB S2-6400 by dkms (Dynamic Kernel Module Support).
 
 git clone https://github.com/Trashcan69/saa716x-dkms.git
 
