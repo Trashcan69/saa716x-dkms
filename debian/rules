@@ -3,5 +3,12 @@
 # output every command that modifies files on the build system.
 #export DH_VERBOSE = 1
 
+DKMS_NAME=saa716x
+DKMS_VERSION=0.5
+
 %:
 	dh $@
+
+override_dh_auto_configure:
+	chmod +x $(DKMS_NAME)-$(DKMS_VERSION)/make.sh
+	dh_auto_configure
