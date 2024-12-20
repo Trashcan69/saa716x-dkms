@@ -1,8 +1,8 @@
 saa716x-dkms (0.5) unstable; urgency=medium
 
-  * Added mulithread compiler support
+  * Added multithread compiler support
 
- -- Marcel Jueling <Marcel.Jueling@gmx.de>  Wed, 18 Dec 2024 16:58:07 +0100
+ -- Marcel Jueling <Marcel.Jueling@gmx.de>  Fri, 20 Dec 2024 16:17:43 +0100
 
 saa716x-dkms (0.4) unstable; urgency=medium
 
