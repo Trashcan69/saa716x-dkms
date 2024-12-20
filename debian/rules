@@ -3,8 +3,8 @@
 # output every command that modifies files on the build system.
 #export DH_VERBOSE = 1
 
-DKMS_NAME=saa716x
-DKMS_VERSION=0.5
+export DKMS_NAME=saa716x
+export DKMS_VERSION=0.5
 
 %:
 	dh $@
