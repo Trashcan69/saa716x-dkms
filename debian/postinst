@@ -1,0 +1,37 @@
+#!/bin/sh
+
+export DKMS_NAME=saa716x
+export DKMS_VERSION=0.6
+
+postinst_found=0
+
+case "$1" in
+    configure)
+	chmod +x /usr/src/${DKMS_NAME}-${DKMS_VERSION}/make.sh
+	for DKMS_POSTINST in /usr/lib/dkms/common.postinst /usr/share/${DKMS_NAME}-dkms/postinst; do
+		if [ -f $DKMS_POSTINST ]; then
+			echo "That takes a while... be patient."
+			$DKMS_POSTINST $DKMS_NAME $DKMS_VERSION /usr/share/${DKMS_NAME}-dkms "" $2
+			postinst_found=1
+			break
+		fi
+	done
+	if [ "$postinst_found" -eq 0 ]; then
+		echo "ERROR: DKMS version is too old and ${DKMS_NAME}-dkms was not"
+		echo "built with legacy DKMS support."
+		echo "You must either rebuild ${DKMS_NAME}-dkms with legacy postinst"
+		echo "support or upgrade DKMS to a more current version."
+		exit 1
+	fi
+	;;
+
+    abort-upgrade|abort-remove|abort-deconfigure)
+	;;
+
+    *)
+	echo "postinst called with unknown argument '$1'" >&2
+	exit 1
+    ;;
+esac
+
+exit 0

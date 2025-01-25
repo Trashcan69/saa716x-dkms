@@ -1,0 +1,19 @@
+#!/bin/sh
+
+export DKMS_NAME=saa716x
+
+case $1 in
+    remove|upgrade|failed-upgrade|abort-install|abort-upgrade|disappear)
+    ;;
+
+    purge)
+	rm -rf /usr/share/${DKMS_NAME}-dkms
+    ;;
+
+    *)
+	echo "postrm called with unknown argument '$1'" >&2
+	exit 1
+    ;;
+esac
+
+exit 0

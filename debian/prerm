@@ -1,0 +1,21 @@
+#!/bin/sh
+
+export DKMS_NAME=saa716x
+
+case $1 in
+    remove|upgrade)
+	find /lib/modules/*/ -name ${DKMS_NAME}*.ko* -delete >/dev/null 2>&1
+	rm -rf /var/lib/dkms/${DKMS_NAME}
+	depmod -a
+    ;;
+
+    failed-upgrade|deconfigure)
+    ;;
+
+    *)
+	echo "prerm called with unknown argument '$1'" >&2
+	exit 1
+    ;;
+esac
+
+exit 0

@@ -1,0 +1,39 @@
+saa716x-dkms (0.6) unstable; urgency=medium
+
+  * Added /etc/modprobe.d/saa716x.conf
+
+ -- Marcel Jueling <Marcel.Jueling@gmx.de>  Sat, 25 Jan 2025 11:02:33 +0100
+
+saa716x-dkms (0.5) unstable; urgency=medium
+
+  * Added multithread compiler support
+
+ -- Marcel Jueling <Marcel.Jueling@gmx.de>  Fri, 20 Dec 2024 16:17:43 +0100
+
+saa716x-dkms (0.4) unstable; urgency=medium
+
+  * Description in debian/control updated
+  * Don't create an additional logfile
+  * Download $archive.zip to /usr/share/saa716x-dkms
+  * Added debian/postrm, /debian/postinst and /debian/prerm is extended
+
+ -- Marcel Jueling <Marcel.Jueling@gmx.de>  Mon, 16 Sep 2024 02:29:24 +0200
+
+saa716x-dkms (0.3) unstable; urgency=medium
+
+  * Added dependency of wget
+
+ -- Marcel Jueling <Marcel.Jueling@gmx.de>  Sun, 17 Feb 2024 22:33:20 +0100
+
+saa716x-dkms (0.2) unstable; urgency=medium
+
+  * Added dependency of unzip
+    (see: https://www.vdr-portal.de/forum/index.php?thread/134671-tt-s2-6400-saa716x-kompilieren-unter-debian-buster-oder-bullseye/&postID=1358422#post1358422)
+
+ -- Marcel Jueling <Marcel.Jueling@gmx.de>  Sun, 28 Jan 2024 10:43:08 +0100
+
+saa716x-dkms (0.1) unstable; urgency=medium
+
+  * Initial release
+
+ -- Marcel Jueling <Marcel.Jueling@gmx.de>  Sat, 24 Jun 2023 11:57:34 +0200
