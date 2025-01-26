@@ -12,5 +12,3 @@ export DKMS_VERSION=0.6
 override_dh_auto_configure:
 	chmod +x $(DKMS_NAME)-$(DKMS_VERSION)/make.sh
 	dh_auto_configure
-
-override_dh_usrlocal:
