@@ -1,0 +1,440 @@
+// SPDX-License-Identifier: GPL-2.0+
+
+#include <linux/types.h>
+
+#include <linux/dvb/video.h>
+#include "saa716x_compat.h"
+
+#include "saa716x_mod.h"
+
+#include "saa716x_priv.h"
+#include "saa716x_ff.h"
+#include "saa716x_ff_cmd.h"
+#include "saa716x_ff_phi.h"
+
+
+int sti7109_cmd_init(struct sti7109_dev *sti7109)
+{
+	mutex_init(&sti7109->cmd_lock);
+	mutex_init(&sti7109->osd_cmd_lock);
+	mutex_init(&sti7109->data_lock);
+
+	init_waitqueue_head(&sti7109->boot_finish_wq);
+	sti7109->boot_finished = 0;
+
+	init_waitqueue_head(&sti7109->cmd_ready_wq);
+	sti7109->cmd_ready = 0;
+
+	init_waitqueue_head(&sti7109->result_avail_wq);
+	sti7109->result_avail = 0;
+
+	init_waitqueue_head(&sti7109->osd_cmd_ready_wq);
+	sti7109->osd_cmd_ready = 0;
+	init_waitqueue_head(&sti7109->osd_result_avail_wq);
+	sti7109->osd_result_avail = 0;
+
+	sti7109->data_handle = 0;
+	sti7109->data_buffer = (u8 *) (sti7109->iobuf + TSOUT_LEN);
+	init_waitqueue_head(&sti7109->data_ready_wq);
+	sti7109->data_ready = 0;
+	init_waitqueue_head(&sti7109->block_done_wq);
+	sti7109->block_done = 0;
+	return 0;
+}
+
+static int sti7109_do_raw_cmd(struct sti7109_dev *sti7109)
+{
+	struct saa716x_ff_dev *saa716x_ff =
+			container_of(sti7109, struct saa716x_ff_dev, sti7109);
+	struct saa716x_dev *saa716x = &saa716x_ff->saa716x;
+	unsigned long timeout;
+
+	timeout = 1 * HZ;
+	timeout = wait_event_interruptible_timeout(sti7109->cmd_ready_wq,
+						   sti7109->cmd_ready == 1,
+						   timeout);
+
+	if (timeout == -ERESTARTSYS || sti7109->cmd_ready == 0) {
+		if (timeout == -ERESTARTSYS) {
+			/* a signal arrived */
+			pci_err(saa716x->pdev, "cmd ERESTARTSYS");
+			return -ERESTARTSYS;
+		}
+		pci_err(saa716x->pdev,
+			"timed out waiting for command ready");
+	}
+
+	sti7109->cmd_ready = 0;
+	sti7109->result_len = 0;
+	sti7109->result_avail = 0;
+	saa716x_ff_phi_write(saa716x_ff, ADDR_CMD_DATA, sti7109->cmd_data,
+			     sti7109->cmd_len);
+	SAA716x_EPWR(PHI_1, FPGA_ADDR_PHI_ISET, ISR_CMD_MASK);
+
+	if (sti7109->result_max_len > 0) {
+		timeout = 1 * HZ;
+		timeout = wait_event_interruptible_timeout(
+				sti7109->result_avail_wq,
+				sti7109->result_avail == 1,
+				timeout);
+
+		if (timeout == -ERESTARTSYS || sti7109->result_avail == 0) {
+			sti7109->result_len = 0;
+			if (timeout == -ERESTARTSYS) {
+				/* a signal arrived */
+				pci_err(saa716x->pdev, "result ERESTARTSYS");
+				return -ERESTARTSYS;
+			}
+			pci_err(saa716x->pdev,
+				"timed out waiting for command result");
+			return -EIO;
+		}
+
+		if (sti7109->result_len > sti7109->result_max_len) {
+			sti7109->result_len = sti7109->result_max_len;
+			pci_err(saa716x->pdev,
+				"not enough space in result buffer");
+		}
+	}
+
+	return 0;
+}
+
+static int sti7109_do_raw_osd_cmd(struct sti7109_dev *sti7109)
+{
+	struct saa716x_ff_dev *saa716x_ff =
+			container_of(sti7109, struct saa716x_ff_dev, sti7109);
+	struct saa716x_dev *saa716x = &saa716x_ff->saa716x;
+	unsigned long timeout;
+
+	timeout = 1 * HZ;
+	timeout = wait_event_interruptible_timeout(sti7109->osd_cmd_ready_wq,
+						   sti7109->osd_cmd_ready == 1,
+						   timeout);
+
+	if (timeout == -ERESTARTSYS || sti7109->osd_cmd_ready == 0) {
+		if (timeout == -ERESTARTSYS) {
+			/* a signal arrived */
+			pci_err(saa716x->pdev, "osd cmd ERESTARTSYS");
+			return -ERESTARTSYS;
+		}
+		pci_err(saa716x->pdev,
+			"timed out waiting for osd command ready");
+	}
+
+	sti7109->osd_cmd_ready = 0;
+	sti7109->osd_result_len = 0;
+	sti7109->osd_result_avail = 0;
+	saa716x_ff_phi_write(saa716x_ff, ADDR_OSD_CMD_DATA,
+			     sti7109->osd_cmd_data, sti7109->osd_cmd_len);
+	SAA716x_EPWR(PHI_1, FPGA_ADDR_PHI_ISET, ISR_OSD_CMD_MASK);
+
+	if (sti7109->osd_result_max_len > 0) {
+		timeout = 1 * HZ;
+		timeout = wait_event_interruptible_timeout(
+				sti7109->osd_result_avail_wq,
+				sti7109->osd_result_avail == 1,
+				timeout);
+
+		if (timeout == -ERESTARTSYS || sti7109->osd_result_avail == 0) {
+			sti7109->osd_result_len = 0;
+			if (timeout == -ERESTARTSYS) {
+				/* a signal arrived */
+				pci_err(saa716x->pdev,
+					"osd result ERESTARTSYS");
+				return -ERESTARTSYS;
+			}
+			pci_err(saa716x->pdev,
+				"timed out waiting for osd command result");
+			return -EIO;
+		}
+
+		if (sti7109->osd_result_len > sti7109->osd_result_max_len) {
+			sti7109->osd_result_len = sti7109->osd_result_max_len;
+			pci_err(saa716x->pdev,
+				"not enough space in result buffer");
+		}
+	}
+
+	return 0;
+}
+
+int sti7109_raw_cmd(struct sti7109_dev *sti7109, osd_raw_cmd_t __user *user_cmdp)
+{
+	struct saa716x_ff_dev *saa716x_ff =
+			container_of(sti7109, struct saa716x_ff_dev, sti7109);
+	struct saa716x_dev *saa716x = &saa716x_ff->saa716x;
+	osd_raw_cmd_t raw_cmd;
+	bool is_osd_cmd;
+	u8 hdr[4];
+	int err;
+
+	err = copy_from_user(&raw_cmd, user_cmdp, sizeof(raw_cmd));
+	if (err)
+		return err;
+
+	err = copy_from_user(hdr, (void __user *)raw_cmd.cmd_data, 4);
+	if (err)
+		return err;
+
+	is_osd_cmd = (hdr[3] == 4);
+
+	if (raw_cmd.cmd_len > (is_osd_cmd ? SIZE_OSD_CMD_DATA : SIZE_CMD_DATA)) {
+		pci_err(saa716x->pdev, "command too long");
+		return -EFAULT;
+	}
+
+	if (is_osd_cmd) {
+		/* raw OSD command */
+		mutex_lock(&sti7109->osd_cmd_lock);
+		err = copy_from_user(sti7109->osd_cmd_data,
+				     (void __user *)raw_cmd.cmd_data,
+				     raw_cmd.cmd_len);
+		if (!err) {
+			sti7109->osd_cmd_len = raw_cmd.cmd_len;
+			sti7109->osd_result_max_len = raw_cmd.result_len;
+			err = sti7109_do_raw_osd_cmd(sti7109);
+			raw_cmd.result_len = sti7109->osd_result_len;
+			if (!err && raw_cmd.result_len > 0) {
+				err = copy_to_user((void __user *)raw_cmd.result_data,
+						   sti7109->osd_result_data,
+						   sti7109->osd_result_len);
+			}
+		}
+		mutex_unlock(&sti7109->osd_cmd_lock);
+	} else {
+		/* raw command */
+		mutex_lock(&sti7109->cmd_lock);
+		err = copy_from_user(sti7109->cmd_data,
+				     (void __user *)raw_cmd.cmd_data,
+				     raw_cmd.cmd_len);
+		if (!err) {
+			sti7109->cmd_len = raw_cmd.cmd_len;
+			sti7109->result_max_len = raw_cmd.result_len;
+			err = sti7109_do_raw_cmd(sti7109);
+			raw_cmd.result_len = sti7109->result_len;
+			if (!err && raw_cmd.result_len > 0) {
+				err = copy_to_user((void __user *)raw_cmd.result_data,
+						   sti7109->result_data,
+						   sti7109->result_len);
+			}
+		}
+		mutex_unlock(&sti7109->cmd_lock);
+	}
+	if (!err)
+		err = put_user(raw_cmd.result_len, &user_cmdp->result_len);
+	return err;
+}
+
+static int sti7109_do_raw_data(struct sti7109_dev *sti7109,
+			       osd_raw_data_t *data)
+{
+	struct saa716x_ff_dev *saa716x_ff =
+			container_of(sti7109, struct saa716x_ff_dev, sti7109);
+	struct saa716x_dev *saa716x = &saa716x_ff->saa716x;
+	unsigned long timeout;
+	u16 blockSize;
+	u16 lastBlockSize;
+	u16 numBlocks;
+	u16 blockIndex;
+	u8 blockHeader[SIZE_BLOCK_HEADER];
+	u8 *blockPtr;
+	int activeBlock;
+	u16 blockOffset;
+
+	timeout = 1 * HZ;
+	timeout = wait_event_interruptible_timeout(sti7109->data_ready_wq,
+						   sti7109->data_ready == 1,
+						   timeout);
+
+	if (timeout == -ERESTARTSYS || sti7109->data_ready == 0) {
+		if (timeout == -ERESTARTSYS) {
+			/* a signal arrived */
+			pci_err(saa716x->pdev, "data ERESTARTSYS");
+			return -ERESTARTSYS;
+		}
+		pci_err(saa716x->pdev, "timed out waiting for data ready");
+		return -EIO;
+	}
+
+	sti7109->data_ready = 0;
+
+	/* For firmware 0.5.0 and up the block data should be 32 byte aligned
+	 * to be able to use special DMA transfers which are a lot faster than
+	 * the usual ones.
+	 */
+	if (sti7109->fw_version >= 0x00000500)
+		blockOffset = 32;
+	else
+		blockOffset = 8;
+
+	/*
+	 * 8 bytes is the size of the block header. Block header structure is:
+	 * 16 bit - block index
+	 * 16 bit - number of blocks
+	 * 16 bit - current block data size
+	 * 16 bit - block handle. This is used to reference the data in the
+	 *          command that uses it.
+	 */
+	blockSize = (SIZE_BLOCK_DATA / 2) - blockOffset;
+	numBlocks = data->data_length / blockSize;
+	lastBlockSize = data->data_length % blockSize;
+	if (lastBlockSize > 0)
+		numBlocks++;
+
+	blockHeader[2] = (u8) (numBlocks >> 8);
+	blockHeader[3] = (u8) numBlocks;
+	blockHeader[6] = (u8) (sti7109->data_handle >> 8);
+	blockHeader[7] = (u8) sti7109->data_handle;
+	blockPtr = sti7109->data_buffer;
+	activeBlock = 0;
+	for (blockIndex = 0; blockIndex < numBlocks; blockIndex++) {
+		u32 addr;
+
+		if (lastBlockSize && (blockIndex == (numBlocks - 1)))
+			blockSize = lastBlockSize;
+
+		blockHeader[0] = (uint8_t) (blockIndex >> 8);
+		blockHeader[1] = (uint8_t) blockIndex;
+		blockHeader[4] = (uint8_t) (blockSize >> 8);
+		blockHeader[5] = (uint8_t) blockSize;
+		/* For firmware 0.5.0 and up set the highest bit of the block
+		 * size to signal that the block data is 32 byte aligned.
+		 */
+		if (sti7109->fw_version >= 0x00000500)
+			blockHeader[4] |= 0x80;
+
+		addr = ADDR_BLOCK_DATA + activeBlock * (SIZE_BLOCK_DATA / 2);
+		saa716x_ff_phi_write(saa716x_ff, addr, blockHeader,
+				     SIZE_BLOCK_HEADER);
+		saa716x_ff_phi_write(saa716x_ff, addr + blockOffset,
+				     blockPtr, blockSize);
+		activeBlock = (activeBlock + 1) & 1;
+		if (blockIndex > 0) {
+			timeout = 1 * HZ;
+			timeout = wait_event_timeout(sti7109->block_done_wq,
+						     sti7109->block_done == 1,
+						     timeout);
+
+			if (sti7109->block_done == 0) {
+				pci_err(saa716x->pdev,
+					"timed out waiting for block done");
+				/* send a data interrupt to cancel the transfer
+				 * and reset the data handling
+				 */
+				SAA716x_EPWR(PHI_1, FPGA_ADDR_PHI_ISET,
+						ISR_DATA_MASK);
+				return -EIO;
+			}
+		}
+		sti7109->block_done = 0;
+		SAA716x_EPWR(PHI_1, FPGA_ADDR_PHI_ISET, ISR_BLOCK_MASK);
+		blockPtr += blockSize;
+	}
+	timeout = 1 * HZ;
+	timeout = wait_event_timeout(sti7109->block_done_wq,
+				     sti7109->block_done == 1,
+				     timeout);
+
+	if (sti7109->block_done == 0) {
+		pci_err(saa716x->pdev, "timed out waiting for block done");
+		/* send a data interrupt to cancel the transfer and reset the
+		 * data handling
+		 */
+		SAA716x_EPWR(PHI_1, FPGA_ADDR_PHI_ISET, ISR_DATA_MASK);
+		return -EIO;
+	}
+	sti7109->block_done = 0;
+
+	data->data_handle = sti7109->data_handle;
+	sti7109->data_handle++;
+	return 0;
+}
+
+int sti7109_raw_data(struct sti7109_dev *sti7109, osd_raw_data_t __user *user_datap)
+{
+	struct saa716x_ff_dev *saa716x_ff =
+			container_of(sti7109, struct saa716x_ff_dev, sti7109);
+	struct saa716x_dev *saa716x = &saa716x_ff->saa716x;
+	osd_raw_data_t raw_data;
+	int err;
+
+	err = copy_from_user(&raw_data, user_datap, sizeof(raw_data));
+	if (err)
+		return err;
+	if (raw_data.data_length > MAX_DATA_LEN) {
+		pci_err(saa716x->pdev, "data too big");
+		return -EFAULT;
+	}
+
+	mutex_lock(&sti7109->data_lock);
+
+	err = copy_from_user(sti7109->data_buffer,
+			     (void __user *)raw_data.data_buffer,
+			     raw_data.data_length);
+	if (!err)
+		err = sti7109_do_raw_data(sti7109, &raw_data);
+	if (!err)
+		err = copy_to_user(user_datap, &raw_data, sizeof(raw_data));
+
+	mutex_unlock(&sti7109->data_lock);
+	return err;
+}
+
+int sti7109_cmd_get_fw_version(struct sti7109_dev *sti7109, u32 *fw_version)
+{
+	int ret_val = -EINVAL;
+
+	mutex_lock(&sti7109->cmd_lock);
+
+	sti7109->cmd_data[0] = 0x00;
+	sti7109->cmd_data[1] = 0x04;
+	sti7109->cmd_data[2] = 0x00;
+	sti7109->cmd_data[3] = 0x00;
+	sti7109->cmd_data[4] = 0x00;
+	sti7109->cmd_data[5] = 0x00;
+	sti7109->cmd_len = 6;
+	sti7109->result_max_len = MAX_RESULT_LEN;
+
+	ret_val = sti7109_do_raw_cmd(sti7109);
+	if (ret_val == 0) {
+		*fw_version = (sti7109->result_data[6] << 16)
+			    | (sti7109->result_data[7] << 8)
+			    | sti7109->result_data[8];
+	}
+
+	mutex_unlock(&sti7109->cmd_lock);
+
+	return ret_val;
+}
+
+int sti7109_cmd_get_video_format(struct sti7109_dev *sti7109, video_size_t *vs)
+{
+	int ret_val = -EINVAL;
+
+	mutex_lock(&sti7109->cmd_lock);
+
+	sti7109->cmd_data[0] = 0x00;
+	sti7109->cmd_data[1] = 0x05; /* command length */
+	sti7109->cmd_data[2] = 0x00;
+	sti7109->cmd_data[3] = 0x01; /* A/V decoder command group */
+	sti7109->cmd_data[4] = 0x00;
+	sti7109->cmd_data[5] = 0x10; /* get video format info command */
+	sti7109->cmd_data[6] = 0x00; /* decoder index 0 */
+	sti7109->cmd_len = 7;
+	sti7109->result_max_len = MAX_RESULT_LEN;
+
+	ret_val = sti7109_do_raw_cmd(sti7109);
+	if (ret_val == 0) {
+		vs->w = (sti7109->result_data[7] << 8)
+		      | sti7109->result_data[8];
+		vs->h = (sti7109->result_data[9] << 8)
+		      | sti7109->result_data[10];
+		vs->aspect_ratio = sti7109->result_data[11] >> 4;
+	}
+
+	mutex_unlock(&sti7109->cmd_lock);
+
+	return ret_val;
+}
+

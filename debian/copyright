@@ -1,0 +1,53 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: linux-saa716x
+Source: https://github.com/s-moch/linux-saa716x
+
+Files: src/drivers/media/pci/saa716x/saa716x_*.c
+       src/drivers/media/pci/saa716x/saa716x_*.h
+       src/drivers/media/pci/saa716x/Kconfig
+       src/drivers/media/pci/saa716x/Makefile
+Copyright:
+  Copyright notices are contained in the individual source files.
+License: GPL-2+
+
+Files: src/drivers/media/pci/saa716x/isl6423.h
+       src/drivers/media/pci/saa716x/si2157.h
+       src/drivers/media/pci/saa716x/si2168.h
+       src/drivers/media/pci/saa716x/stv090x.h
+       src/drivers/media/pci/saa716x/stv6110x.h
+       src/drivers/media/pci/saa716x/tda1004x.h
+       src/drivers/media/pci/saa716x/tda18271.h
+       src/drivers/media/pci/saa716x/tda827x.h
+       src/drivers/media/pci/saa716x/tda8290.h
+Copyright:
+  2004 Andrew de Quincey
+  2005 Hartmut Hackmann
+  2007-2008 Michael Krufky
+  2014 Antti Palosaari
+  Manu Abraham
+  ST Microelectronics
+License: GPL-2+
+
+Files: src/drivers/media/pci/saa716x/saa716x_compat.h
+Copyright:
+  Copyright notice is not present in the source file.
+License: GPL-2+
+
+Files: src/drivers/media/pci/saa716x/saa716x_ff_phi.c
+Copyright:
+  Copyright notice is not present in the source file.
+License: GPL-2
+
+Files: src/drivers/media/pci/saa716x/saa716x_ff_ir.c
+Copyright: 2010 Oliver Endriss <o.endriss@gmx.de>
+License: GPL-2+
+
+License: GPL-2+
+ On Debian systems, the complete text of the GNU General Public
+ License version 2 can be found in
+ /usr/share/common-licenses/GPL-2.
+
+License: GPL-2
+ On Debian systems, the complete text of the GNU General Public
+ License version 2 can be found in
+ /usr/share/common-licenses/GPL-2.
