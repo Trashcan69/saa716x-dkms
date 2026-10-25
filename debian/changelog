@@ -1,0 +1,11 @@
+saa716x-dkms (2.0) unstable; urgency=medium
+
+  * Initial Debian package for the SAA716x DKMS driver.
+  * Build all four SAA716x kernel modules directly with the kernel Kbuild
+    interface.
+  * Include the required legacy DVB frontend and tuner headers.
+  * Add Linux 4.12 DVB core include path for external builds.
+  * Build from the self-contained SAA716x driver source without downloading
+    source code during installation.
+
+ -- Marcel Jueling <Marcel.Jueling@gmx.de>  Mon, 05 Oct 2026 20:30:00 +0200

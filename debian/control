@@ -1,0 +1,24 @@
+Source: saa716x-dkms
+Section: kernel
+Priority: optional
+Maintainer: Marcel Jueling <Marcel.Jueling@gmx.de>
+Build-Depends:
+ debhelper-compat (= 13),
+ dh-sequence-dkms
+Standards-Version: 4.7.0
+Rules-Requires-Root: no
+Homepage: https://github.com/s-moch/linux-saa716x
+
+Package: saa716x-dkms
+Architecture: all
+Depends:
+ ${misc:Depends},
+ dkms,
+ firmware-saa716x
+Conflicts: saa716x, saa716x-legacy-dkms, saa716x+firmware-dkms
+Description: DKMS support for SAA716x DVB devices
+ This package provides the out-of-tree SAA716x driver sources
+ for building the SAA716x kernel modules with DKMS.
+ .
+ The package contains all required DVB frontend and tuner
+ headers.

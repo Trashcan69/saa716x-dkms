@@ -1,0 +1,16 @@
+PACKAGE_NAME="saa716x-dkms"
+PACKAGE_VERSION="#MODULE_VERSION#"
+
+MAKE[0]="make -C /lib/modules/${kernelver}/build M=${dkms_tree}/${PACKAGE_NAME}/${PACKAGE_VERSION}/build CONFIG_SAA716X_CORE=m CONFIG_DVB_SAA716X_BUDGET=m CONFIG_DVB_SAA716X_HYBRID=m CONFIG_DVB_SAA716X_FF=m modules"
+
+BUILT_MODULE_NAME[0]="saa716x_core"
+BUILT_MODULE_NAME[1]="saa716x_budget"
+BUILT_MODULE_NAME[2]="saa716x_hybrid"
+BUILT_MODULE_NAME[3]="saa716x_ff"
+
+DEST_MODULE_LOCATION[0]="/kernel/drivers/media/pci/saa716x"
+DEST_MODULE_LOCATION[1]="/kernel/drivers/media/pci/saa716x"
+DEST_MODULE_LOCATION[2]="/kernel/drivers/media/pci/saa716x"
+DEST_MODULE_LOCATION[3]="/kernel/drivers/media/pci/saa716x"
+
+AUTOINSTALL="yes"
