@@ -7,6 +7,7 @@
 #include <linux/timer.h>
 #include <linux/version.h>
 #include <linux/module.h>
+#include <linux/pci.h>
 #include <linux/i2c.h>
 #include <linux/slab.h>
 
@@ -48,7 +49,7 @@ typedef struct osd_raw_data_s {
         dev_warn(&(pdev)->dev, fmt, ##__VA_ARGS__)
 #endif
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 9, 0)
+#ifndef PCI_IRQ_INTX
 #define PCI_IRQ_INTX PCI_IRQ_LEGACY
 #endif
 

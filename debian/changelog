@@ -1,3 +1,9 @@
+saa716x-dkms (2.0.1) unstable; urgency=medium
+
+  * Fix PCI_IRQ_INTX compatibility with kernels defining it
+
+ -- Marcel Jueling <Marcel.Jueling@gmx.de>  Mon, 02 Nov 2026 10:35:00 +0100
+
 saa716x-dkms (2.0) unstable; urgency=medium
 
   * Initial Debian package for the SAA716x DKMS driver.
@@ -7,6 +13,5 @@ saa716x-dkms (2.0) unstable; urgency=medium
   * Add Linux 4.12 DVB core include path for external builds.
   * Build from the self-contained SAA716x driver source without downloading
     source code during installation.
-  * This package is still under construction.
 
  -- Marcel Jueling <Marcel.Jueling@gmx.de>  Mon, 05 Oct 2026 20:30:00 +0200
